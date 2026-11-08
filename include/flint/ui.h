@@ -52,11 +52,21 @@ void fl_widget_destroy(fl_widget_t w);
 [[nodiscard]]
 fl_result_t fl_widget_append(
     fl_widget_t parent, fl_widget_t child);
+// fl_widget_detach removes a direct child
+// from parent and returns ownership to
+// the caller. The child must currently
+// belong to parent. Returns FL_OK on
+// success, FL_ERR_NOMEM on null args or
+// a widget that is not a child of parent.
+[[nodiscard]]
+fl_result_t fl_widget_detach(
+    fl_widget_t parent, fl_widget_t child);
 // fl_widget_label_set_text replaces the
 // label text with a copy of text. NULL
 // clears to empty. Returns FL_OK on
-// success, FL_ERR_NOMEM on null label
-// or allocation failure.
+// success, FL_ERR_NOMEM on null label,
+// a non-label widget, or allocation
+// failure.
 fl_result_t fl_widget_label_set_text(
     fl_widget_t label, const char* text);
 // fl_widget_layout runs a vertical stack
@@ -100,6 +110,14 @@ fl_result_t fl_widget_box_create(
 [[nodiscard]]
 fl_result_t fl_widget_panel_create(
     const char* title, fl_widget_t* out);
+// fl_widget_panel_set_title replaces the
+// panel title with a copy of title. NULL
+// clears to empty. Returns FL_OK on
+// success, FL_ERR_NOMEM on null panel,
+// a non-panel widget, or allocation
+// failure.
+fl_result_t fl_widget_panel_set_title(
+    fl_widget_t panel, const char* title);
 // fl_widget_viewport_create makes a
 // viewport leaf. Implemented: layout
 // gives a sane default size. Returns
@@ -117,6 +135,13 @@ fl_result_t fl_widget_viewport_create(
 [[nodiscard]]
 fl_result_t fl_widget_table_create(
     unsigned rows, fl_widget_t* out);
+// fl_widget_table_set_rows updates the
+// table row count. The next layout pass
+// sizes it to rows times one line.
+// Returns FL_OK on success, FL_ERR_NOMEM
+// on null table or a non-table widget.
+fl_result_t fl_widget_table_set_rows(
+    fl_widget_t table, unsigned rows);
 // fl_box_set_spacing sets the gap in
 // pixels between box children.
 // Implemented. Returns FL_OK on
