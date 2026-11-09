@@ -306,10 +306,21 @@ bool wl_dispatch(struct Wl* wl) {
         return false;
     }
 
-    if (n == 0 || !(pfd.revents & POLLIN)) {
+    if (n == 0) {
         wl_display_cancel_read(wl->display);
-    } else if (wl_display_read_events(wl->display) < 0) {
+    } else if (pfd.revents &
+               (POLLERR | POLLHUP | POLLNVAL)) {
+        // The connection is gone or unusable;
+        // let the main loop unwind instead of
+        // spinning on a dead descriptor.
+        wl_display_cancel_read(wl->display);
         return false;
+    } else if (pfd.revents & POLLIN) {
+        if (wl_display_read_events(wl->display) < 0) {
+            return false;
+        }
+    } else {
+        wl_display_cancel_read(wl->display);
     }
 
     if (wl_display_dispatch_pending(wl->display) < 0) {

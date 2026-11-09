@@ -16,6 +16,30 @@ static const VkClearColorValue kClearColor = {
     .float32 = {0.35f, 0.10f, 0.55f, 1.0f},
 };
 
+// pick_composite_alpha chooses the first
+// alpha mode the surface supports,
+// preferring opaque.
+static VkCompositeAlphaFlagBitsKHR
+pick_composite_alpha(
+    VkCompositeAlphaFlagsKHR supported) {
+    static const VkCompositeAlphaFlagBitsKHR
+        modes[] = {
+            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+        };
+    uint32_t n = (uint32_t)(sizeof(modes) /
+                            sizeof(modes[0]));
+    for (uint32_t i = 0; i < n; i++) {
+        if ((supported &
+             (VkCompositeAlphaFlagsKHR)modes[i]) != 0) {
+            return modes[i];
+        }
+    }
+    return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+}
+
 #ifndef NDEBUG
 // vk_debug_cb prints validation layer
 // messages to stderr. Always returns
@@ -517,8 +541,11 @@ bool vk_swapchain_create(struct Vk* vk, struct Wl* wl) {
         VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     sc_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     sc_info.preTransform = caps.currentTransform;
+    // Prefer opaque, but only when the
+    // surface supports it.
     sc_info.compositeAlpha =
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        pick_composite_alpha(
+            caps.supportedCompositeAlpha);
     // FIFO is the one present mode every Vulkan implementation is required to support.
     sc_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     sc_info.clipped = VK_TRUE;
@@ -623,6 +650,12 @@ bool vk_draw_frame(struct Vk* vk, bool* resize_needed) {
                 "error code %d\n",
                 result);
         return false;
+    }
+    if (result == VK_SUBOPTIMAL_KHR) {
+        // The image is still usable, but the
+        // swapchain no longer matches the
+        // surface. Recreate it after this frame.
+        *resize_needed = true;
     }
 
     if (image_index >= vk->image_count) {

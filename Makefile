@@ -5,7 +5,8 @@ CXX ?= c++
 # constexpr objects, attributes) that
 # older compilers reject. Fail fast
 # with a clear message instead of
-# pages of syntax errors. 
+# pages of syntax errors.
+C23_SNIPPET = printf '%s\n' \
     'static constexpr unsigned N = 8;' \
     '[[nodiscard]] static int f(void *p)' \
     '{ return p == nullptr; }' \

@@ -301,12 +301,48 @@ fl_result_t fl_widget_append(
     }
 }
 
+// fl_widget_detach removes a direct child
+// from its parent and returns ownership
+// to the caller. The child must currently
+// belong to the parent.
+fl_result_t fl_widget_detach(
+    fl_widget_t parent, fl_widget_t child) {
+    try {
+        if (parent == nullptr) {
+            return FL_ERR_NOMEM;
+        }
+        if (child == nullptr) {
+            return FL_ERR_NOMEM;
+        }
+        if (child->parent != parent) {
+            return FL_ERR_NOMEM;
+        }
+        auto& kids = parent->children;
+        for (auto it = kids.begin();
+             it != kids.end(); ++it) {
+            if (it->get() == child) {
+                it->release();
+                kids.erase(it);
+                child->parent = nullptr;
+                return FL_OK;
+            }
+        }
+        return FL_ERR_NOMEM;
+    } catch (...) {
+        return FL_ERR_NOMEM;
+    }
+}
+
 // fl_widget_label_set_text swaps in a copy
-// of text; NULL clears to empty.
+// of text; NULL clears to empty. Only a
+// label may be passed.
 fl_result_t fl_widget_label_set_text(
     fl_widget_t label, const char* text) {
     try {
         if (label == nullptr) {
+            return FL_ERR_NOMEM;
+        }
+        if (label->kind != Kind::Label) {
             return FL_ERR_NOMEM;
         }
         if (text == nullptr) {
@@ -422,6 +458,29 @@ fl_result_t fl_widget_panel_create(
     }
 }
 
+// fl_widget_panel_set_title swaps in a copy
+// of title; NULL clears to empty. Only a
+// panel may be passed.
+fl_result_t fl_widget_panel_set_title(
+    fl_widget_t panel, const char* title) {
+    try {
+        if (panel == nullptr) {
+            return FL_ERR_NOMEM;
+        }
+        if (panel->kind != Kind::Panel) {
+            return FL_ERR_NOMEM;
+        }
+        if (title == nullptr) {
+            panel->text.clear();
+        } else {
+            panel->text = title;
+        }
+        return FL_OK;
+    } catch (...) {
+        return FL_ERR_NOMEM;
+    }
+}
+
 // fl_widget_viewport_create allocates a
 // viewport leaf with a default size.
 fl_result_t fl_widget_viewport_create(
@@ -470,6 +529,25 @@ fl_result_t fl_widget_table_create(
         node->h = 0;
         node->parent = nullptr;
         *out = node.release();
+        return FL_OK;
+    } catch (...) {
+        return FL_ERR_NOMEM;
+    }
+}
+
+// fl_widget_table_set_rows updates the row
+// count used by the next layout pass. Only
+// a table may be passed.
+fl_result_t fl_widget_table_set_rows(
+    fl_widget_t table, unsigned rows) {
+    try {
+        if (table == nullptr) {
+            return FL_ERR_NOMEM;
+        }
+        if (table->kind != Kind::Table) {
+            return FL_ERR_NOMEM;
+        }
+        table->rows = rows;
         return FL_OK;
     } catch (...) {
         return FL_ERR_NOMEM;
